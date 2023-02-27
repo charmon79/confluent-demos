@@ -1,0 +1,2 @@
+# Confluent Cloud Quick Start
+This Terraform project is intended to reproduce all Confluent Cloud assets created by following the [Quick Start for Confluent Cloud](https://docs.confluent.io/cloud/current/get-started/index.html) guide.
