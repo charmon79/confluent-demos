@@ -145,6 +145,11 @@ resource "confluent_kafka_topic" "users" {
     key    = confluent_api_key.app-manager-kafka-api-key.id
     secret = confluent_api_key.app-manager-kafka-api-key.secret
   }
+  partitions_count = 1
+
+  depends_on = [
+    confluent_kafka_cluster.basic
+  ]
 }
 
 ########################################################################################################
@@ -246,6 +251,11 @@ resource "confluent_kafka_topic" "pageviews" {
     key    = confluent_api_key.app-manager-kafka-api-key.id
     secret = confluent_api_key.app-manager-kafka-api-key.secret
   }
+  partitions_count = 1
+
+  depends_on = [
+    confluent_kafka_cluster.basic
+  ]
 }
 
 ########################################################################################################
@@ -268,7 +278,7 @@ resource "confluent_connector" "datagen_pageviews" {
     "kafka.api.key"      = confluent_api_key.app-manager-kafka-api-key.id
     "kafka.api.secret"   = confluent_api_key.app-manager-kafka-api-key.secret
     "kafka.topic"        = "pageviews"
-    "output.data.format" = "JSON_SR"
+    "output.data.format" = "AVRO"
     "quickstart"         = "PAGEVIEWS"
     "tasks.max"          = 1
   }
