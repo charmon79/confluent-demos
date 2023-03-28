@@ -47,8 +47,9 @@ services:
     # To connect to the DB: 
     #   docker exec -it ksqldb bash -c 'ksql http://localhost:8088'
     # *-----------------------------*  
-    image: confluentinc/ksqldb-server:0.28.2
-    platform: linux/amd64
+    image: confluentinc/cp-ksqldb-server:7.3.2 # using CP image because it supports both ARM and x86; has slight implications for command section vs. the equivalent confluentinc/ksqldb-server image
+    # image: confluentinc/ksqldb-server:0.28.2
+    # platform: linux/amd64
     container_name: ksqldb
     depends_on:
       - broker
@@ -91,12 +92,12 @@ services:
         #
         echo "Installing connector plugins"
         mkdir -p /home/appuser/confluent-hub-components/
-        /home/appuser/bin/confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ confluentinc/kafka-connect-jdbc:10.0.1
-        /home/appuser/bin/confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ --worker-configs /dev/null confluentinc/kafka-connect-datagen:0.4.0
-        /home/appuser/bin/confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ --worker-configs /dev/null confluentinc/kafka-connect-elasticsearch:11.0.0
+        confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ confluentinc/kafka-connect-jdbc:10.6.4
+        confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ --worker-configs /dev/null confluentinc/kafka-connect-datagen:0.6.0
+        confluent-hub install --no-prompt --component-dir /home/appuser/confluent-hub-components/ --worker-configs /dev/null confluentinc/kafka-connect-elasticsearch:14.0.5
         #
         echo "Launching ksqlDB"
-        /usr/bin/docker/run & 
+        /etc/confluent/docker/run & 
         #
         echo "Waiting for Kafka Connect to start listening on $$KSQL_CONNECT_REST_ADVERTISED_HOST_NAME ⏳"
         while : ; do
@@ -146,6 +147,7 @@ services:
         sleep infinity
 
   # ksqldb-cli:
+  #   # image: confluentinc/cp-ksqldb-cli:7.3.2
   #   image: confluentinc/ksqldb-cli:0.28.2
   #   platform: linux/amd64
   #   container_name: ksqldb-cli
