@@ -1,6 +1,10 @@
 = Introduction to ksqlDB
 
-Copied from/based on https://github.com/confluentinc/demo-scene/tree/master/introduction-to-ksqldb
+Based on https://github.com/confluentinc/demo-scene/tree/master/introduction-to-ksqldb
+
+* Bumped CP image versions to 7.3.2
+* Updated to run broker in KRaft mode
+
 
 Robin Moffatt <robin@confluent.io>
 v1.00, 11 February 2021
