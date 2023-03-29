@@ -48,8 +48,6 @@ services:
     #   docker exec -it ksqldb bash -c 'ksql http://localhost:8088'
     # *-----------------------------*  
     image: confluentinc/cp-ksqldb-server:7.3.2 # using CP image because it supports both ARM and x86; has slight implications for command section vs. the equivalent confluentinc/ksqldb-server image
-    # image: confluentinc/ksqldb-server:0.28.2
-    # platform: linux/amd64
     container_name: ksqldb
     depends_on:
       - broker
@@ -146,17 +144,6 @@ services:
         #
         sleep infinity
 
-  # ksqldb-cli:
-  #   # image: confluentinc/cp-ksqldb-cli:7.3.2
-  #   image: confluentinc/ksqldb-cli:0.28.2
-  #   platform: linux/amd64
-  #   container_name: ksqldb-cli
-  #   depends_on:
-  #     - broker
-  #     - ksqldb
-  #   entrypoint: /bin/sh
-  #   tty: true
-
   # control-center:
   #   image: confluentinc/cp-enterprise-control-center:7.3.2
   #   container_name: control-center
@@ -193,17 +180,16 @@ services:
   #       sleep 120  
   #       /etc/confluent/docker/run
 
-  postgres:
-    # *-----------------------------*
-    # To connect to the DB: 
-    #   docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
-    # *-----------------------------*
-    image: debezium/postgres:13
-    platform: linux/amd64
-    container_name: postgres
-    environment:
-     - POSTGRES_USER=postgres
-     - POSTGRES_PASSWORD=postgres
+  # postgres:
+  #   # *-----------------------------*
+  #   # To connect to the DB: 
+  #   #   docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+  #   # *-----------------------------*
+  #   image: debezium/postgres:14-alpine
+  #   container_name: postgres
+  #   environment:
+  #    - POSTGRES_USER=postgres
+  #    - POSTGRES_PASSWORD=postgres
 
   # elasticsearch:
   #   image: elastic/elasticsearch:7.17.9
