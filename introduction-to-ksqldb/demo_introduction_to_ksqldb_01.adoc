@@ -1,6 +1,5 @@
 = Introduction to ksqlDB - demo script 01
-Robin Moffatt <robin@confluent.io>
-v1.10, 10 February 2021
+Chris Harmon <charmon@confluent.io>
 :toc:
 
 == Running the test rig
@@ -9,9 +8,9 @@ v1.10, 10 February 2021
 +
 [source,bash]
 ----
-git clone https://github.com/confluentinc/demo-scene.git
-cd ./demo-scene/introduction-to-ksqldb
-docker-compose up -d
+git clone https://github.com/charmon79/confluent-demos.git
+cd ./introduction-to-ksqldb
+docker compose up -d
 ----
 +
 
@@ -19,7 +18,7 @@ docker-compose up -d
 +
 [source,bash]
 ----
-docker exec -it ksqldb ksql http://localhost:8088
+docker compose exec -it ksqldb ksql http://localhost:8088
 ----
 
 == ksqlDB basics
@@ -36,7 +35,7 @@ CREATE STREAM MOVEMENTS (PERSON VARCHAR KEY, LOCATION VARCHAR)
 
 [source,sql]
 ----
-SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT_TS, 
+SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','US/Central') AS EVENT_TS, 
        PERSON,
        LOCATION 
   FROM MOVEMENTS
@@ -47,9 +46,9 @@ SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT
 
 [source,sql]
 ----
-INSERT INTO MOVEMENTS VALUES ('robin', 'York');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Leeds');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Ilkley');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Omaha');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Kansas City');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Des Moines');
 ----
 
 [Window 2] Cancel the query, show the topics
@@ -71,11 +70,11 @@ PRINT movements FROM BEGINNING;
 [source,sql]
 ----
 SET 'auto.offset.reset' = 'earliest';
-SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT_TS, 
+SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','US/Central') AS EVENT_TS, 
        PERSON, 
        LOCATION 
   FROM MOVEMENTS
-  WHERE LCASE(LOCATION)='leeds'
+  WHERE LCASE(LOCATION)='omaha'
   EMIT CHANGES;
 ----
 
@@ -83,10 +82,10 @@ SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT
 
 [source,sql]
 ----
-INSERT INTO MOVEMENTS VALUES ('robin', 'Sheffield');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Leeds');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Wakefield');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Leeds');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'St. Louis');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Omaha');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Wichita');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Omaha');
 ----
 
 
@@ -96,8 +95,8 @@ Create a new topic that could be used to trigger an event-driven app when the us
 ----
 SET 'auto.offset.reset' = 'earliest';
 
-CREATE STREAM LEEDS_USERS WITH (KAFKA_TOPIC='leeds-users') 
-    AS SELECT * FROM MOVEMENTS WHERE LCASE(LOCATION)='leeds' EMIT CHANGES;
+CREATE STREAM OMAHA_USERS WITH (KAFKA_TOPIC='omaha-users') 
+    AS SELECT * FROM MOVEMENTS WHERE LCASE(LOCATION)='omaha' EMIT CHANGES;
 ----
 
 Show that a new topic has been created
@@ -111,15 +110,15 @@ Dump the topic contents
 
 [source,sql]
 ----
-PRINT 'leeds-users' FROM BEGINNING;
+PRINT 'omaha-users' FROM BEGINNING;
 ----
 
 [Window 1] Insert some more data
 
 [source,sql]
 ----
-INSERT INTO MOVEMENTS VALUES ('robin', 'Sheffield');
-INSERT INTO MOVEMENTS VALUES ('robin', 'Leeds');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'St. Louis');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Omaha');
 ----
 
 == Stream/Table duality
@@ -131,10 +130,10 @@ Show the difference between stream and table - but note that it's the *same* Kaf
 CREATE TABLE MOVEMENTS_T (PERSON VARCHAR PRIMARY KEY, LOCATION VARCHAR) 
     WITH (VALUE_FORMAT='JSON', KAFKA_TOPIC='movements');
 
-SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT_TS, PERSON, LOCATION 
+SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','US/Central') AS EVENT_TS, PERSON, LOCATION 
     FROM MOVEMENTS_T EMIT CHANGES;
 
-SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','Europe/London') AS EVENT_TS, PERSON, LOCATION 
+SELECT TIMESTAMPTOSTRING(ROWTIME,'yyyy-MM-dd HH:mm:ss','US/Central') AS EVENT_TS, PERSON, LOCATION 
     FROM MOVEMENTS EMIT CHANGES;
 ----
 
@@ -161,8 +160,8 @@ SELECT PERSON, LATEST_LOCATION, LOCATION_CHANGES, UNIQUE_LOCATIONS
 [Window 1] Insert some data
 [source,sql]
 ----
-INSERT INTO MOVEMENTS VALUES ('robin', 'Leeds');
-INSERT INTO MOVEMENTS VALUES ('robin', 'London');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Omaha');
+INSERT INTO MOVEMENTS VALUES ('Chris', 'Lincoln');
 ----
 
 Show a pull query in action
@@ -171,7 +170,7 @@ Show a pull query in action
 ----
 SELECT PERSON, LATEST_LOCATION, LOCATION_CHANGES, UNIQUE_LOCATIONS 
   FROM PERSON_STATS 
- WHERE PERSON='robin';
+ WHERE PERSON='Chris';
 ----
 
 Run a pull query using the REST API
@@ -180,7 +179,7 @@ Run a pull query using the REST API
 ----
 docker exec -t ksqldb curl -s -X "POST" "http://localhost:8088/query" \
      -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
-     -d '{"ksql":"SELECT PERSON, LATEST_LOCATION, LOCATION_CHANGES, UNIQUE_LOCATIONS FROM PERSON_STATS WHERE PERSON='\''robin'\'';"}'|jq '.[].row'
+     -d '{"ksql":"SELECT PERSON, LATEST_LOCATION, LOCATION_CHANGES, UNIQUE_LOCATIONS FROM PERSON_STATS WHERE PERSON='\''Chris'\'';"}'|jq '.[].row'
 ----
 
 == Connecting to other systems
@@ -232,8 +231,8 @@ Add some more data into Kafka topic, show postgres updating in place.
 
 [source,sql]
 ----
-INSERT INTO MOVEMENTS (ROWTIME, PERSON, LOCATION) VALUES (STRINGTOTIMESTAMP('2020-02-17T15:22:00Z','yyyy-MM-dd''T''HH:mm:ssX'), 'robin', 'Leeds');
-INSERT INTO MOVEMENTS (ROWTIME, PERSON, LOCATION) VALUES (STRINGTOTIMESTAMP('2020-02-17T16:22:00Z','yyyy-MM-dd''T''HH:mm:ssX'), 'robin', 'Retford');
+INSERT INTO MOVEMENTS (ROWTIME, PERSON, LOCATION) VALUES (STRINGTOTIMESTAMP('2020-02-17T15:22:00Z','yyyy-MM-dd''T''HH:mm:ssX'), 'Chris', 'Kansas City');
+INSERT INTO MOVEMENTS (ROWTIME, PERSON, LOCATION) VALUES (STRINGTOTIMESTAMP('2020-02-17T16:22:00Z','yyyy-MM-dd''T''HH:mm:ssX'), 'Chris', 'Springfield');
 ----
 
 === Deploying code via REST API
@@ -248,7 +247,7 @@ docker exec -t ksqldb curl -s -X "POST" "http://localhost:8088/ksql" \
 docker exec -t ksqldb curl -s -X "POST" "http://localhost:8088/ksql" \
      -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
      -d '{
-            "ksql":"CREATE STREAM LONDON AS SELECT * FROM MOVEMENTS WHERE LCASE(LOCATION)='\''london'\'';",
+            "ksql":"CREATE STREAM Lincoln AS SELECT * FROM MOVEMENTS WHERE LCASE(LOCATION)='\''Lincoln'\'';",
             "streamsProperties": {
                 "ksql.streams.auto.offset.reset": "earliest"
             }
