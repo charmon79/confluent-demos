@@ -184,9 +184,9 @@ resource "confluent_connector" "datagen_users" {
 data "confluent_schema_registry_region" "sr_region" {
     cloud = local.cloud
     region = local.sr_region
-    package = "ESSENTIALS"
+    package = "ADVANCED"
 }
-resource "confluent_schema_registry_cluster" "essentials" {
+resource "confluent_schema_registry_cluster" "sg" {
   package = data.confluent_schema_registry_region.sr_region.package
   environment {
     id = confluent_environment.env.id
@@ -215,7 +215,7 @@ resource "confluent_role_binding" "app-ksql-kafka-cluster-admin" {
 resource "confluent_role_binding" "app-ksql-schema-registry-resource-owner" {
   principal   = "User:${confluent_service_account.app-ksql.id}"
   role_name   = "ResourceOwner"
-  crn_pattern = format("%s/%s", confluent_schema_registry_cluster.essentials.resource_name, "subject=*")
+  crn_pattern = format("%s/%s", confluent_schema_registry_cluster.sg.resource_name, "subject=*")
 }
 
 ## the ksqlDB cluster itself
@@ -234,7 +234,7 @@ resource "confluent_ksql_cluster" "ksqldb-app1" {
   depends_on = [
     confluent_role_binding.app-ksql-kafka-cluster-admin,
     confluent_role_binding.app-ksql-schema-registry-resource-owner,
-    confluent_schema_registry_cluster.essentials
+    confluent_schema_registry_cluster.sg
   ]
 }
 
@@ -284,7 +284,7 @@ resource "confluent_connector" "datagen_pageviews" {
   }
 
   depends_on = [
-    confluent_schema_registry_cluster.essentials
+    confluent_schema_registry_cluster.sg
   ]
 }
 
