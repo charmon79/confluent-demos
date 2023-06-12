@@ -145,6 +145,11 @@ resource "confluent_kafka_topic" "users" {
     key    = confluent_api_key.app-manager-kafka-api-key.id
     secret = confluent_api_key.app-manager-kafka-api-key.secret
   }
+  partitions_count = 1
+
+  depends_on = [
+    confluent_kafka_cluster.basic
+  ]
 }
 
 ########################################################################################################
@@ -179,9 +184,9 @@ resource "confluent_connector" "datagen_users" {
 data "confluent_schema_registry_region" "sr_region" {
     cloud = local.cloud
     region = local.sr_region
-    package = "ESSENTIALS"
+    package = "ADVANCED"
 }
-resource "confluent_schema_registry_cluster" "essentials" {
+resource "confluent_schema_registry_cluster" "sg" {
   package = data.confluent_schema_registry_region.sr_region.package
   environment {
     id = confluent_environment.env.id
@@ -210,7 +215,7 @@ resource "confluent_role_binding" "app-ksql-kafka-cluster-admin" {
 resource "confluent_role_binding" "app-ksql-schema-registry-resource-owner" {
   principal   = "User:${confluent_service_account.app-ksql.id}"
   role_name   = "ResourceOwner"
-  crn_pattern = format("%s/%s", confluent_schema_registry_cluster.essentials.resource_name, "subject=*")
+  crn_pattern = format("%s/%s", confluent_schema_registry_cluster.sg.resource_name, "subject=*")
 }
 
 ## the ksqlDB cluster itself
@@ -229,7 +234,7 @@ resource "confluent_ksql_cluster" "ksqldb-app1" {
   depends_on = [
     confluent_role_binding.app-ksql-kafka-cluster-admin,
     confluent_role_binding.app-ksql-schema-registry-resource-owner,
-    confluent_schema_registry_cluster.essentials
+    confluent_schema_registry_cluster.sg
   ]
 }
 
@@ -246,6 +251,11 @@ resource "confluent_kafka_topic" "pageviews" {
     key    = confluent_api_key.app-manager-kafka-api-key.id
     secret = confluent_api_key.app-manager-kafka-api-key.secret
   }
+  partitions_count = 1
+
+  depends_on = [
+    confluent_kafka_cluster.basic
+  ]
 }
 
 ########################################################################################################
@@ -268,13 +278,13 @@ resource "confluent_connector" "datagen_pageviews" {
     "kafka.api.key"      = confluent_api_key.app-manager-kafka-api-key.id
     "kafka.api.secret"   = confluent_api_key.app-manager-kafka-api-key.secret
     "kafka.topic"        = "pageviews"
-    "output.data.format" = "JSON_SR"
+    "output.data.format" = "AVRO"
     "quickstart"         = "PAGEVIEWS"
     "tasks.max"          = 1
   }
 
   depends_on = [
-    confluent_schema_registry_cluster.essentials
+    confluent_schema_registry_cluster.sg
   ]
 }
 
