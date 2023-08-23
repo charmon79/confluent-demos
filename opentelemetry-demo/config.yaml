@@ -1,0 +1,64 @@
+# default config file location: /etc/otelcol-contrib/config.yaml
+receivers:
+
+  filelog:
+    include: [ /var/log/auth.log, /var/log/syslog ]
+#    start_at: beginning
+    force_flush_period: 500ms
+    operators:
+      - type: regex_parser
+        regex: '^(?P<time>[A-Z|a-z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}) (?P<host>\S*) (?P<application>(\w|-)*)\[*(?P<pid>\d*)\]*: (?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%b %g %H:%M:%S'
+
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+
+  kafka:
+    brokers:
+    - <cluster id>.<region id>.aws.confluent.cloud:9092
+    protocol_version: 3.5.0
+    auth:
+      sasl:
+        username: "****"
+        password: "****"
+        mechanism: PLAIN
+      tls:
+        insecure: false
+        insecure_skip_verify: true
+    topic: opentelemetry_logs
+    encoding: otlp_json
+    producer:
+      compression: snappy
+    sending_queue:
+      queue_size: 100000
+
+  logging:
+    verbosity: detailed
+
+processors:
+  batch:
+    send_batch_size: 128
+    send_batch_max_size: 128
+
+service:
+
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [kafka]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+
+  telemetry:
+    logs:
+      level: info
